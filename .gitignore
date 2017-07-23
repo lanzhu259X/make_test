@@ -1,0 +1,14 @@
+
+## .gitignore for intellij
+
+*.iml
+*.ipr
+*.iws
+.idea/
+
+
+# .gitignore for maven
+target/
+
+logs/
+out/
