@@ -21,6 +21,11 @@ public class MakeTestComponent implements ApplicationComponent {
     private static final String RETURN_VOID = "void";
     private static final String EXCEPTION_STR = "Exception";
 
+    private static final String REQUEST_PARM_STR = "paramStr";
+    private static final String REQUEST_INFO_STR = "requestInfo";
+
+    private String basePath;
+
     @Override
     public void initComponent() {
         // do nothing
@@ -55,6 +60,7 @@ public class MakeTestComponent implements ApplicationComponent {
         if (field == null) {
             return;
         }
+        this.basePath = field.getProject().getBasePath();
         Set<String> existMethodSet = getMethodNameSet(psiClass);
         //获取 filed 属性的类的PsiClass
         PsiClass targetPisClass = PsiUtil.resolveClassInType(field.getType());
@@ -112,75 +118,105 @@ public class MakeTestComponent implements ApplicationComponent {
     }
 
     private String buildTryBodyStr(PsiMethod targetMethod, PsiField targetObj) {
-        PsiParameter[]  parameters = targetMethod.getParameterList().getParameters();
         StringBuilder sb = new StringBuilder();
+        Map<String, String> map = buildRequestParamStr(targetMethod);
+        if (targetMethod.getReturnType() == null) {
+            // constructor method
+            sb.append(map.get(REQUEST_INFO_STR));
+            sb.append("new ");
+            sb.append(targetMethod.getName());
+            sb.append(" (");
+            sb.append(map.get(REQUEST_PARM_STR));
+            sb.append(");\n");
+            return sb.toString();
+        }else {
+            sb.append(map.get(REQUEST_INFO_STR));
+            String returnTypeName = targetMethod.getReturnType().getPresentableText();
+            if (!returnTypeName.equalsIgnoreCase(RETURN_VOID)) {
+                sb.append(returnTypeName);
+                sb.append(" result = ");
+            }
+            if (targetMethod.getModifierList().hasModifierProperty(PsiModifier.STATIC)) {
+                sb.append(targetObj.getType().getPresentableText());
+            }else {
+                sb.append(targetObj.getName());
+            }
+            sb.append(".");
+            sb.append(targetMethod.getName());
+            sb.append(" (");
+            sb.append(map.get(REQUEST_PARM_STR));
+            sb.append(");\n");
+            sb.append("Assert.isTrue(true);\n");
+        }
+
+        return sb.toString();
+    }
+
+    private Map<String, String> buildRequestParamStr(PsiMethod targetMethod) {
+        Map<String, String> result = new HashMap<>();
+        if (targetMethod.getParameterList() == null || targetMethod.getParameterList().getParameters().length <= 0) {
+            // request param is null.
+            result.put(REQUEST_INFO_STR, "");
+            result.put(REQUEST_PARM_STR, "");
+            return result;
+        }
+        PsiParameter[]  parameters = targetMethod.getParameterList().getParameters();
+        StringBuilder requestInfo = new StringBuilder();
         StringBuilder paramStr = new StringBuilder();
         for (int i = 0; i < parameters.length; i++) {
             PsiParameter parameter = parameters[i];
-            String paramTypeName = parameter.getType().getPresentableText();
-            String paramName = parameter.getName();
-            String value;
-            switch (paramTypeName) {
-                case "int":
-                case "Integer":
-                    value = "1";
-                    break;
-                case "long":
-                case "Long":
-                    value = "1L";
-                case "char":
-                    value = "\'a\'";
-                    break;
-                case "float":
-                case "double":
-                case "Float":
-                case "Double":
-                    value = "1.0";
-                    break;
-                case "boolean":
-                case "Boolean":
-                    value = "false";
-                    break;
-                case "String":
-                    value = "\"" + paramName + "\"";
-                    break;
-                case "Date":
-                    value = "new Date()";
-                    break;
-                default:
-                    value = "null";
-            }
-            sb.append(paramTypeName);
-            sb.append(" ");
-            sb.append(paramName);
-            sb.append(" = ");
-            sb.append(value);
-            sb.append(";\n");
-
-            paramStr.append(paramName);
+            requestInfo.append(buildRequestValue(parameter));
+            paramStr.append(parameter.getName());
             if (i < (parameters.length - 1)) {
                 paramStr.append(", ");
             }
         }
-        String returnTypeName = targetMethod.getReturnType().getPresentableText();
-        if (!returnTypeName.equalsIgnoreCase(RETURN_VOID)) {
+        result.put(REQUEST_INFO_STR, requestInfo.toString());
+        result.put(REQUEST_PARM_STR, paramStr.toString());
+        return result;
+    }
 
-            sb.append(returnTypeName);
-            sb.append(" result = ");
-        }
-        if (targetMethod.getModifierList().hasModifierProperty(PsiModifier.STATIC)) {
-            sb.append(targetObj.getType().getPresentableText());
+    private String buildRequestValue(PsiParameter parameter) {
+        StringBuilder sb = new StringBuilder();
+        String paramTypeName = parameter.getType().getPresentableText();
+        String paramName = parameter.getName();
+        DefaultBaseType baseType = DefaultBaseType.getByCode(paramTypeName);
+        if (baseType != null) {
+            sb.append(paramTypeName);
+            sb.append(" ");
+            sb.append(paramName);
+            sb.append(" = ");
+            sb.append(baseType.getValue());
+            sb.append(";\n");
+            return sb.toString();
         }else {
-            sb.append(targetObj.getName());
+            //not default base type
+//            PsiClass paramPsiClass = PsiUtil.resolveClassInType(parameter.getType());
+//            String fullName = paramPsiClass.getQualifiedName();
+            sb.append(paramTypeName);
+            sb.append(" ");
+            sb.append(paramName);
+            sb.append(" = null;\n");
+
+//            if (fullName.startsWith(basePath)){
+//                sb.append("new ");
+//                sb.append(paramTypeName);
+//                sb.append("();\n");
+//                sb.append(buildParamObjectSet(paramPsiClass));
+//            }else {
+//                sb.append("null;\n");
+//            }
+            return sb.toString();
         }
-        sb.append(".");
-        sb.append(targetMethod.getName());
-        sb.append(" (");
-        sb.append(paramStr);
-        sb.append(");\n");
-        sb.append("Assert.isTrue(true);\n");
+    }
+
+    private String buildParamObjectSet(PsiClass paramPsiClass) {
+        StringBuilder sb = new StringBuilder();
+        PsiField[] fields = paramPsiClass.getFields();
+        //TODO
         return sb.toString();
     }
+
 
     private String getFirstUpperCase(String oldStr) {
         return oldStr.substring(0, 1).toUpperCase() + oldStr.substring(1);

@@ -12,15 +12,13 @@ public enum DefaultBaseType {
     INTEGER("Integer", "1"),
     LONG("long", "1L"),
     LONG_O("Long", "2L"),
-    FLOAT("float", "1.0"),
-    FLOAT_O("Float", "2.0"),
+    FLOAT("float", "1.0f"),
+    FLOAT_O("Float", "2.0f"),
     DOUBLE("double", "10.01"),
     DOUBLE_O("Double", "20.02"),
     BOOLEAN("boolean", "true"),
     BOOLEAN_O("Boolean", "false"),
-
     DATE("Date", "new Date()");
-
 
     private String code;
     private String value;
