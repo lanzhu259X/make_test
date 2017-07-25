@@ -1,16 +1,16 @@
 <idea-plugin>
-  <id>com.your.company.unique.plugin.id</id>
-  <name>Plugin display name here</name>
-  <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+  <id>com.lanzhu.plugin.maketest</id>
+  <name>Make Test</name>
+  <version>1.1</version>
+  <vendor email="liliang259X@163.com" url="http://www.lanzhu.com">lanzhu</vendor>
 
   <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      Make Test Case which have @MakeTest Field Class.<br>
+      
     ]]></description>
 
   <change-notes><![CDATA[
-      Add change notes here.<br>
+      Bug Repair.<br>
       <em>most HTML tags may be used</em>
     ]]>
   </change-notes>
